@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package edrxdr.telemetry.v1;
+
+// -----------------------------------------------------------------------
+// TelemetryEvent
+//
+// This is our WIRE format, not our data model. The data model is OCSF
+// (Open Cybersecurity Schema Framework — check schema.ocsf.io for the
+// current released version at write time; this repo was last verified
+// against 1.8.0). Every field below has an explicit comment mapping it
+// to its OCSF attribute path. See docs/ocsf-mapping.md.
+//
+// This schema will evolve: Module 6 adds file/network/persistence arms
+// to `oneof activity`, Module 6.5 adds container context, Module 9.5 adds
+// auth. Field numbers already assigned here are stable; additive changes
+// only. Do not renumber.
+// -----------------------------------------------------------------------
+
+message TelemetryEvent {
+  // Wire-level identifiers.
+  string event_id = 1;              // durable event id (recommend UUIDv7); used for dedup
+  int64 time_unix_ms = 2;           // OCSF: time (epoch millis)
+  string schema_version = 12;       // our wire schema version, e.g. "1.0.0" — not OCSF metadata.version
+
+  // OCSF Base Event classification — top-level attributes, NOT inside metadata.
+  // See https://schema.ocsf.io/classes/base_event
+  int32 class_uid = 6;              // OCSF: class_uid (1007 = process_activity)
+  int32 category_uid = 7;           // OCSF: category_uid (1 = System Activity)
+  int32 activity_id = 8;            // OCSF: activity_id (1 = Launch, 2 = Terminate)
+  int32 type_uid = 9;               // OCSF: type_uid = class_uid * 100 + activity_id
+  int32 severity_id = 11;           // OCSF: severity_id (1 = Informational for raw telemetry)
+
+  Metadata metadata = 3;            // OCSF: metadata.* (product + OCSF schema version)
+  Device device = 4;                // OCSF: device.*
+  Actor actor = 5;                  // OCSF: actor.* (who performed the activity)
+
+  // One of these is set per event. Process from Issue 01; file/network from
+  // Issues 07–08; persistence/container context added in Issues 09–10.
+  oneof activity {
+    ProcessActivity process_activity = 10;
+    FileActivity file_activity = 13;
+    NetworkActivity network_activity = 14;
+    PersistenceActivity persistence_activity = 15;
+  }
+
+  // Optional container enrichment (Issue 10). Empty on endpoint-only agents.
+  ContainerContext container = 16;
+}
+
+// OCSF metadata object — product identity and the OCSF schema version in use.
+// Classification fields (class_uid, etc.) live on TelemetryEvent, not here.
+message Metadata {
+  string product_name = 1;          // OCSF: metadata.product.name
+  string product_vendor_name = 2;   // OCSF: metadata.product.vendor_name
+  string product_version = 3;       // OCSF: metadata.product.version (agent build)
+  string ocsf_version = 4;          // OCSF: metadata.version (OCSF schema version string)
+  string uid = 5;                   // OCSF: metadata.uid (optional event metadata uid)
+}
+
+message Device {
+  string hostname = 1;              // OCSF: device.hostname
+  string os_type = 2;               // OCSF: device.os.type (caption; keep in sync with os_type_id)
+  int32 os_type_id = 4;             // OCSF: device.os.type_id (enum — verify at schema.ocsf.io)
+  string agent_id = 3;              // fleet enrollment ID (extension; not OCSF-standard)
+  string tenant_id = 5;             // reserved for multi-tenant; lab builds may use a const
+}
+
+// OCSF actor = the entity that performed the activity on the target process.
+// For a process Launch, actor.process is typically the parent/launcher;
+// actor.user is the user context. Do not treat Actor as "user only."
+message Actor {
+  User user = 1;                    // OCSF: actor.user
+  ProcessRef process = 2;           // OCSF: actor.process (launching process)
+}
+
+message User {
+  string name = 1;                  // OCSF: actor.user.name
+  string uid = 2;                   // OCSF: actor.user.uid
+}
+
+message FileInfo {
+  string path = 1;                  // OCSF: process.file.path
+  string sha256 = 2;                // OCSF: process.file.hashes[] (algorithm=SHA-256) — TIER 2 flatten
+}
+
+// Shared process reference (parent, actor.process, etc.).
+message ProcessRef {
+  int32 pid = 1;                    // OCSF: *.pid
+  string name = 2;                  // OCSF: *.name
+  string uid = 3;                   // OCSF: *.uid — durable process identity (NOT reused like pid)
+  string cmd_line = 4;              // OCSF: *.cmd_line — needed for lineage / Sigma parent checks
+}
+
+message ProcessActivity {
+  string uid = 7;                   // OCSF: process.uid — durable unique id (pid+start or OS GUID)
+  int32 pid = 1;                    // OCSF: process.pid
+  int64 start_time_unix_ms = 8;     // OCSF: process.created_time (epoch millis) — strengthens uid
+  string name = 2;                  // OCSF: process.name
+  string cmd_line = 3;              // OCSF: process.cmd_line
+  FileInfo file = 4;                // OCSF: process.file
+  ProcessRef parent_process = 5;    // OCSF: process.parent_process
+  // parent_pid retained for early agents; prefer parent_process.pid. Do not diverge.
+  int32 parent_pid = 6;             // convenience denorm of parent_process.pid
+}
+
+// OCSF file_activity (class_uid 1001) — Issues 07+. Correlate via process.uid.
+message FileActivity {
+  string file_path = 1;             // OCSF: file.path
+  string file_name = 2;             // OCSF: file.name
+  string activity_name = 3;         // Create|Open|Rename|Delete (caption)
+  int32 activity_id = 4;            // OCSF file_activity activity_id — verify at schema.ocsf.io
+  ProcessRef process = 5;           // OCSF: actor/process performing the file op
+  string sha256 = 6;                // flattened hash when available
+}
+
+// OCSF network_activity (class_uid 4001) — Issues 08+.
+message NetworkActivity {
+  string src_ip = 1;                // OCSF: src_endpoint.ip
+  int32 src_port = 2;               // OCSF: src_endpoint.port
+  string dst_ip = 3;                // OCSF: dst_endpoint.ip
+  int32 dst_port = 4;               // OCSF: dst_endpoint.port
+  string protocol = 5;              // OCSF: connection_info.protocol_name (caption)
+  ProcessRef process = 6;           // process that opened the connection
+}
+
+// Thin-slice persistence signal — Issues 09+. Concrete class matrix in docs.
+message PersistenceActivity {
+  string mechanism = 1;             // cron|systemd|registry_run|launch_agent|...
+  string path_or_key = 2;           // file path or registry key
+  string value = 3;                 // command / target
+  ProcessRef process = 4;           // writer process when known
+}
+
+// Issue 10 container enrichment on any activity.
+message ContainerContext {
+  string pod_name = 1;
+  string namespace = 2;
+  string container_id = 3;
+  string container_name = 4;
+  string node_name = 5;
+}

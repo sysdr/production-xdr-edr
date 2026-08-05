@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package edrxdr.ingest.v1;
+
+// Issue 05 — agent → backend ingest. Telemetry payloads are OCSF-shaped JSON
+// (Phase A agents) wrapped here until Phase B maps fully onto telemetry.proto.
+
+message EnrollRequest {
+  string enrollment_token = 1;   // lab shared secret / bootstrap token
+  string hostname = 2;
+  string os_type = 3;            // Linux | Windows | macOS
+  string public_key_pem = 4;     // optional CSR-style stub; lab may ignore
+  string tenant_id = 5;          // reserved multi-tenant stub (ADR 001/006)
+}
+
+message EnrollResponse {
+  string agent_id = 1;
+  string certificate_pem = 2;
+  string private_key_pem = 3;    // lab only — production uses CSR + offline key
+  string ca_cert_pem = 4;
+  int64 not_after_unix = 5;
+}
+
+message TelemetryBatch {
+  string agent_id = 1;
+  string tenant_id = 2;
+  string schema_version = 3;     // wire contract version (ADR 003)
+  repeated TelemetryFrame frames = 4;
+}
+
+message TelemetryFrame {
+  string event_id = 1;           // durable id for dedup (ADR 002)
+  int64 time_unix_ms = 2;
+  bytes payload_json = 3;        // OCSF-shaped JSON from agents
+  bool compressed = 4;           // if true, payload_json is zstd
+}
+
+message IngestAck {
+  uint32 accepted = 1;
+  uint32 duplicate = 2;
+  string error = 3;
+}
+
+service TelemetryIngest {
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+  rpc StreamBatches(stream TelemetryBatch) returns (stream IngestAck);
+  // Unary fallback for labs / reconnect bursts
+  rpc PushBatch(TelemetryBatch) returns (IngestAck);
+}

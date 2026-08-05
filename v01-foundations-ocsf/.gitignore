@@ -1,0 +1,4 @@
+# Issue 01 docs excluded from version control
+docs/diagrams/v01-foundations-ocsf/
+docs/implementation-guides/01-foundations-ocsf.md
+docs/issue-notes/
