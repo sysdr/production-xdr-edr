@@ -1,0 +1,20 @@
+[package]
+name = "linux-agent-ebpf"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "eBPF programs for linux-agent (bpfel-unknown-none target)"
+
+[dependencies]
+aya-ebpf = "0.2"
+linux-agent-common = { path = "../linux-agent-common", default-features = false }
+
+[features]
+default = []
+lsm-stub = []
+
+# Built separately (needs bpf-linker; LLVM must match rustc):
+#   rustup toolchain install nightly-2026-06-17 --component rust-src
+#   cargo build --manifest-path linux-agent-ebpf/Cargo.toml \
+#     --target bpfel-unknown-none -Z build-std=core --release
+# See docs/implementation-guides/02-linux-agent-ebpf.md

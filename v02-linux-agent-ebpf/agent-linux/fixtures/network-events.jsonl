@@ -1,0 +1,2 @@
+{"process_uid":"lab-boot:1401:4000000000","process_pid":1401,"process_name":"curl","src_ip":"10.0.0.5","src_port":51234,"dst_ip":"93.184.216.34","dst_port":443,"time":1700000002000}
+{"process_uid":"lab-boot:1401:4000000000","process_pid":1401,"process_name":"curl","src_ip":"10.0.0.5","src_port":51235,"dst_ip":"198.51.100.10","dst_port":8080,"time":1700000002100}

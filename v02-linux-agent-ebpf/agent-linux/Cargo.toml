@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+# linux-agent-ebpf is built with the bpfel-unknown-none target (Reader VM), not
+# as part of host `cargo test`. See agent-linux/README.md.
+members = [
+    "linux-agent",
+    "linux-agent-common",
+]
+exclude = ["linux-agent-ebpf"]
+default-members = ["linux-agent", "linux-agent-common"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"

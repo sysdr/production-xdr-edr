@@ -1,0 +1,3 @@
+{"process_uid":"lab-boot:1500:6000000000","process_pid":1500,"process_name":"installer","mechanism":"cron","path_or_key":"/etc/cron.d/evil","time":1700000003000}
+{"process_uid":"lab-boot:1500:6000000000","process_pid":1500,"process_name":"installer","mechanism":"systemd_unit","path_or_key":"/etc/systemd/system/evil.service","time":1700000003100}
+{"process_uid":"lab-boot:1500:6000000000","process_pid":1500,"process_name":"installer","mechanism":"ld.so.preload","path_or_key":"/etc/ld.so.preload","time":1700000003200}

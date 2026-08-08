@@ -1,0 +1,5 @@
+# bpf-linker 0.10.4 ships with LLVM 22.1.7. Floating `nightly` may jump to
+# LLVM 23+ and fail linking. Bump this channel when upgrading bpf-linker.
+[toolchain]
+channel = "nightly-2026-06-17"
+components = ["rust-src"]

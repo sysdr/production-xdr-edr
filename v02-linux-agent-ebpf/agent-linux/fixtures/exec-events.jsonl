@@ -1,0 +1,6 @@
+{"pid":1,"ppid":0,"uid":0,"start_time_ns":1000000000,"parent_start_time_ns":0,"comm":"systemd","filename":"/usr/lib/systemd/systemd"}
+{"pid":420,"ppid":1,"uid":0,"start_time_ns":2000000000,"parent_start_time_ns":1000000000,"comm":"sshd","filename":"/usr/sbin/sshd"}
+{"pid":1337,"ppid":420,"uid":1000,"start_time_ns":3000000000,"parent_start_time_ns":2000000000,"comm":"bash","filename":"/bin/bash"}
+{"pid":1401,"ppid":1337,"uid":1000,"start_time_ns":4000000000,"parent_start_time_ns":3000000000,"comm":"curl","filename":"/usr/bin/curl"}
+{"pid":1402,"ppid":1337,"uid":1000,"start_time_ns":5000000000,"parent_start_time_ns":3000000000,"comm":"sleep","filename":"/usr/bin/sleep"}
+{"pid":1403,"ppid":1337,"uid":1000,"start_time_ns":6000000000,"parent_start_time_ns":3000000000,"comm":"python3","filename":"/usr/bin/python3"}
